@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no"/>
+<title>Law Learning Hub - AI Chatbot</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Roboto Slab', serif;
+    background: #121a2b;
+    color: #e8e8e8;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header, footer {
+    background: #1e2c4f;
+    color: #ffcb42;
+    text-align: center;
+    font-weight: 700;
+    padding: 1rem;
+    font-size: 1.3rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  nav {
+    background: #15243a;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.75rem 0;
+    box-shadow: inset 0 -2px 4px #0f1a29;
+  }
+  nav a {
+    color: #ffcb42;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 1rem;
+  }
+  nav a:hover, nav a:focus {
+    text-decoration: underline;
+    outline: none;
+  }
+  .chat-container {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 1rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  .messages {
+    flex-grow: 1;
+    overflow-y: auto;
+    margin-bottom: 0.75rem;
+    background: #192a56;
+    border-radius: 10px;
+    padding: 1rem;
+    color: #d1d1d1;
+  }
+  .message {
+    margin-bottom: 1rem;
+    max-width: 80%;
+    padding: 0.6rem 1rem;
+    border-radius: 12px;
+    line-height: 1.3;
+  }
+  .bot-msg {
+    background: #1f355a;
+    color: #ffcb42;
+    align-self: flex-start;
+  }
+  .user-msg {
+    background: #ffcb42;
+    color: #15243a;
+    align-self: flex-end;
+  }
+  form {
+    display: flex;
+  }
+  input[type="text"] {
+    flex-grow: 1;
+    border: none;
+    border-radius: 25px 0 0 25px;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    outline: none;
+    color: #15243a;
+  }
+  button {
+    background: #ffcb42;
+    border: none;
+    border-radius: 0 25px 25px 0;
+    padding: 0 1.5rem;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+  button:hover, button:focus {
+    background: #e6b93b;
+    outline: none;
+  }
+  .info {
+    font-size: 0.9rem;
+    color: #a0a0a0;
+    margin-bottom: 0.5rem;
+    text-align: center;
+  }
+  @media (max-width: 400px) {
+    .chat-container {
+      padding: 0.5rem;
+    }
+    .messages {
+      padding: 0.75rem;
+    }
+  }
+</style>
+</head>
+<body>
+<header>LAW LEARNING HUB - AI CHATBOT</header>
+<nav>
+  <a href="{{ url_for('home') }}">Home</a>
+  <a href="{{ url_for('chatbot') }}" aria-current="page">AI Chatbot</a>
+  <a href="{{ url_for('zoom') }}">1:1 Zoom Call</a>
+  <a href="{{ url_for('games') }}">Games</a>
+</nav>
+
+<div class="chat-container" role="main">
+  <div class="info" id="info">Chat with our AI powered by OpenAI</div>
+  <div class="messages" id="messages" aria-live="polite" aria-label="Chat messages"></div>
+  <form id="chatForm" aria-label="Chat input form" autocomplete="off">
+    <input type="text" id="userInput" placeholder="Ask a law question or say hello..." aria-label="Type your message" required />
+    <button type="submit" aria-label="Send message">Send</button>
+  </form>
+</div>
+
+<footer>
+  &copy; 2024 Law Learning Hub - AI Chatbot powered by OpenAI
+</footer>
+
+<script>
+  const messagesEl = document.getElementById('messages');
+  const chatForm = document.getElementById('chatForm');
+  const userInput = document.getElementById('userInput');
+
+  function addMessage(text, isUser) {
+    const msgDiv = document.createElement('div');
+    msgDiv.className = 'message ' + (isUser ? 'user-msg' : 'bot-msg');
+    msgDiv.textContent = text;
+    messagesEl.appendChild(msgDiv);
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function sendMessageToBackend(message) {
+    const response = await fetch("/api/chatbot", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({message})
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error || "Chatbot error");
+    }
+    const data = await response.json();
+    return data.response;
+  }
+
+  chatForm.addEventListener('submit', async e => {
+    e.preventDefault();
+    const userText = userInput.value.trim();
+    if (!userText) return;
+    addMessage(userText, true);
+    userInput.value = '';
+
+    addMessage("AI is typing...", false);
+    try {
+      const botResponse = await sendMessageToBackend(userText);
+      // Remove "AI is typing..." message
+      const typingMsg = messagesEl.querySelector('.bot-msg:last-child');
+      if (typingMsg && typingMsg.textContent === "AI is typing...") {
+        messagesEl.removeChild(typingMsg);
+      }
+      addMessage(botResponse, false);
+    } catch (error) {
+      // Remove typing message
+      const typingMsg = messagesEl.querySelector('.bot-msg:last-child');
+      if (typingMsg && typingMsg.textContent === "AI is typing...") {
+        messagesEl.removeChild(typingMsg);
+      }
+      addMessage("Sorry, error: " + error.message, false);
+    }
+  });
+
+  window.onload = () => {
+    addMessage("Hello! I'm your Law Learning AI Chatbot. Ask me law questions or say 'help' for tips.", false);
+  };
+</script>
+</body>
+</html>

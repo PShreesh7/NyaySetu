@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Law Learning Hub - Games</title>
+<style>
+  body {
+    margin: 0; padding: 0;
+    font-family: 'Montserrat', sans-serif;
+    background: #1b273f;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+  header, footer {
+    background: #0e1830;
+    color: #ffbb33;
+    text-align: center;
+    font-weight: 700;
+    padding: 1rem;
+    font-size: 1.3rem;
+    box-shadow: 0 2px 7px rgba(0,0,0,0.4);
+  }
+  nav {
+    background: #142241;
+    display: flex;
+    justify-content: space-around;
+    padding: 0.75rem 0;
+    box-shadow: inset 0 -2px 4px #0b1426;
+  }
+  nav a {
+    color: #ffbb33;
+    font-weight: 700;
+    text-decoration: none;
+    font-size: 1rem;
+  }
+  nav a:hover, nav a:focus {
+    color: #ffd966;
+    outline: none;
+  }
+  main {
+    flex-grow: 1;
+    padding: 1rem 1.5rem;
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  h2 {
+    text-align: center;
+    font-size: 1.6rem;
+    margin-bottom: 1rem;
+  }
+  .quiz-section {
+    background: #243354;
+    padding: 1rem;
+    border-radius: 12px;
+    box-shadow: 0 5px 8px rgba(255,187,51,0.5);
+  }
+  .question {
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+  }
+  .options {
+    list-style-type: none;
+    padding: 0;
+    margin-bottom: 1rem;
+  }
+  .options li {
+    background: #304070;
+    padding: 0.7rem 1rem;
+    border-radius: 8px;
+    margin-bottom: 0.6rem;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  .options li:hover, .options li:focus {
+    background: #4a63a6;
+    outline: none;
+  }
+  .options li.correct {
+    background: #36b037;
+    color: white;
+    font-weight: 700;
+  }
+  .options li.wrong {
+    background: #b3342a;
+    color: white;
+    font-weight: 700;
+  }
+  .result {
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+    text-align: center;
+  }
+  button {
+    display: block;
+    margin: 0 auto;
+    background: #ffbb33;
+    border: none;
+    border-radius: 25px;
+    padding: 0.75rem 1.5rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #0e1830;
+    cursor: pointer;
+    box-shadow: 0 5px 8px rgba(255,187,51,0.7);
+    transition: background-color 0.3s ease;
+    user-select: none;
+  }
+  button:hover, button:focus {
+    background: #ffd966;
+    outline: none;
+  }
+  @media (max-width: 400px) {
+    main {
+      padding: 1rem 1rem;
+    }
+    h2 {
+      font-size: 1.3rem;
+    }
+  }
+</style>
+</head>
+<body>
+<header>LAW LEARNING HUB - GAMES</header>
+<nav>
+  <a href="{{ url_for('home') }}">Home</a>
+  <a href="{{ url_for('chatbot') }}">AI Chatbot</a>
+  <a href="{{ url_for('zoom') }}">1:1 Zoom Call</a>
+  <a href="{{ url_for('games') }}" aria-current="page">Games</a>
+</nav>
+
+<main role="main">
+  <h2>Law Quiz Challenge</h2>
+  <div class="quiz-section" id="quiz-section" aria-live="polite" aria-atomic="true">
+    <div class="question" id="question">Loading question...</div>
+    <ul class="options" id="options"></ul>
+    <div class="result" id="result" aria-live="polite"></div>
+    <button id="nextBtn" disabled>Next Question</button>
+  </div>
+</main>
+
+<footer>
+  &copy; 2024 Law Learning Hub | Mobile Learning Games
+</footer>
+
+<script>
+  const quiz = [
+    {
+      question: "What is the primary source of law in the United States?",
+      options: ["The Constitution", "Case law", "Statutes", "Administrative regulations"],
+      answer: 0
+    },
+    {
+      question: "Which law governs agreements between parties?",
+      options: ["Contract Law", "Criminal Law", "Tort Law", "Family Law"],
+      answer: 0
+    },
+    {
+      question: "What must be proven for a conviction in a criminal case?",
+      options: [
+        "Proof beyond a reasonable doubt",
+        "Preponderance of the evidence",
+        "Clear and convincing evidence",
+        "Probable cause"
+      ],
+      answer: 0
+    },
+    {
+      question: "Which amendment protects freedom of speech?",
+      options: ["First Amendment", "Second Amendment", "Fourth Amendment", "Fifth Amendment"],
+      answer: 0
+    },
+    {
+      question: "Which legal principle means 'let the decision stand'?",
+      options: ["Stare decisis", "Habeas corpus", "Res judicata", "Mens rea"],
+      answer: 0
+    }
+  ];
+
+  let currentIndex = 0;
+  const questionEl = document.getElementById('question');
+  const optionsEl = document.getElementById('options');
+  const resultEl = document.getElementById('result');
+  const nextBtn = document.getElementById('nextBtn');
+
+  function loadQuestion() {
+    const q = quiz[currentIndex];
+    questionEl.textContent = q.question;
+    optionsEl.innerHTML = '';
+    resultEl.textContent = '';
+    nextBtn.disabled = true;
+    q.options.forEach((option, idx) => {
+      const li = document.createElement('li');
+      li.tabIndex = 0;
+      li.textContent = option;
+      li.addEventListener('click', () => selectOption(idx));
+      li.addEventListener('keypress', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectOption(idx);
+        }
+      });
+      optionsEl.appendChild(li);
+    });
+  }
+
+  function selectOption(selected) {
+    const q = quiz[currentIndex];
+    const lis = optionsEl.querySelectorAll('li');
+    lis.forEach((li, idx) => {
+      li.style.pointerEvents = 'none';
+      if(idx === q.answer) {
+        li.classList.add('correct');
+      }
+      if(idx === selected && selected !== q.answer) {
+        li.classList.add('wrong');
+      }
+    });
+    if(selected === q.answer) {
+      resultEl.textContent = "Correct! 🎉";
+    } else {
+      resultEl.textContent = `Wrong! The correct answer is "${q.options[q.answer]}".`;
+    }
+    nextBtn.disabled = false;
+    nextBtn.focus();
+  }
+
+  nextBtn.addEventListener('click', () => {
+    currentIndex++;
+    if(currentIndex >= quiz.length) {
+      questionEl.textContent = "Quiz complete! Well done.";
+      optionsEl.innerHTML = "";
+      resultEl.textContent = "";
+      nextBtn.style.display = 'none';
+      return;
+    }
+    loadQuestion();
+  });
+
+  window.onload = () => {
+    loadQuestion();
+  };
+</script>
+</body>
+</html>
